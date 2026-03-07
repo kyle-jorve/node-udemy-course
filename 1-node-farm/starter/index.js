@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as http from "node:http";
+import * as url from "node:url";
 
 //===============//
 //----- LOG -----//
@@ -50,7 +51,19 @@ import * as http from "node:http";
 //----- SERVER -----//
 //==================//
 const server = http.createServer((req, res) => {
-	res.end("Bonjour du serveur!");
+	const path = req.url;
+
+	if (path === "/") res.end("This is the Home page.");
+	else if (path === "/about") res.end("This is the About page.");
+	else if (path === "/product") res.end("This is the Product page.");
+	else {
+		// headers must come bfore ending the response
+		res.writeHead(404, {
+			"content-type": "text/html",
+			"custom-header": "Bonjour du serveur!",
+		});
+		res.end("<h1>Page not found</h1><h2>Bonjour du serveur!</h2>");
+	}
 });
 
 server.listen(8000, "localhost", () => {
