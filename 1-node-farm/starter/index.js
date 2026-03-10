@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as http from "node:http";
-import * as url from "node:url";
+import { default as useTemplate } from "./modules/useTemplate.js";
 
 //===============//
 //----- LOG -----//
@@ -50,12 +50,52 @@ import * as url from "node:url";
 //==================//
 //----- SERVER -----//
 //==================//
+const __dirname = import.meta.dirname;
+// It's okay that these functions are synchronous (blocking). They're executed only once and then the data is cached.
+const templates = {
+	overview: fs.readFileSync(`${__dirname}/templates/template-overview.html`, "utf-8"),
+	product: fs.readFileSync(`${__dirname}/templates/template-product.html`, "utf-8"),
+	productCard: fs.readFileSync(`${__dirname}/templates/template-card.html`, "utf-8"),
+};
+const dataJSON = fs.readFileSync(`${__dirname}/dev-data/data.json`, "utf-8");
+const data = JSON.parse(dataJSON);
 const server = http.createServer((req, res) => {
-	const path = req.url;
+	const url = new URL(req.url, `http://${req.headers.host}`);
+	const pathname = url.pathname;
+	const prodID = url.searchParams.get("id");
 
-	if (path === "/") res.end("This is the Home page.");
-	else if (path === "/about") res.end("This is the About page.");
-	else if (path === "/product") res.end("This is the Product page.");
+	// home page
+	if (pathname === "/") {
+		res.end("This is the Home page.");
+	}
+	// overview page
+	else if (pathname === "/overview") {
+		const cardsMarkup = data.map((item) => useTemplate(templates.productCard, item)).join("");
+		const markup = templates.overview.replaceAll("{{PRODUCT_CARDS}}", cardsMarkup);
+
+		res.writeHead(200, {
+			"content-type": "text/html",
+		});
+		res.end(markup);
+	}
+	// product page
+	else if (pathname === "/product") {
+		const prodData = data.find((item) => item.id == prodID);
+		const markup = useTemplate(templates.product, prodData);
+
+		res.writeHead(200, {
+			"content-type": "text/html",
+		});
+		res.end(markup);
+	}
+	// API
+	else if (pathname === "/api") {
+		res.writeHead(200, {
+			"content-type": "application/json",
+		});
+		res.end(dataJSON);
+	}
+	// page not found
 	else {
 		// headers must come bfore ending the response
 		res.writeHead(404, {
