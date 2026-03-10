@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as http from "node:http";
+import { default as slugify } from "slugify";
 import { default as useTemplate } from "./modules/useTemplate.js";
 
 //===============//
@@ -59,6 +60,11 @@ const templates = {
 };
 const dataJSON = fs.readFileSync(`${__dirname}/dev-data/data.json`, "utf-8");
 const data = JSON.parse(dataJSON);
+const slugs = data.map((item) =>
+	slugify(item.productName, {
+		lower: true,
+	}),
+);
 const server = http.createServer((req, res) => {
 	const url = new URL(req.url, `http://${req.headers.host}`);
 	const pathname = url.pathname;
